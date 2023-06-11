@@ -272,6 +272,7 @@ function promptAddRole() {
 }
 
 // Function to create a new employee
+// Function to create an employee in the database
 async function createEmployee(employee) {
   const query = 'INSERT INTO employee SET ?';
   return await connection.query(query, employee);
@@ -301,49 +302,21 @@ function promptAddEmployee() {
       },
       {
         type: 'input',
-        name: 'department name',
+        name: 'departmentName',
         message: "Enter the department name:",
-        validate: (input) => (input ? true : "Employee's first name is required"),
+        validate: (input) => (input ? true : "Department name is required"),
       },
       {
         type: 'input',
-        name: 'employeeManagerFirstName',
+        name: 'managerFirstName',
         message: "Enter the first name of the employee's manager:",
         validate: (input) => (input ? true : "First name of the employee's manager is required"),
       },
     ])
     .then(async (answers) => {
-      const { employeeFirstName, employeeLastName, employeeRole, employeeManagerFirstName } = answers;
-
-      try {
-        // Retrieve the role ID based on the provided role title
-        const roleQuery = 'SELECT id FROM roles WHERE title = ?';
-        const roleResult = await connection.query(roleQuery, [employeeRole]);
-        const employeeRoleId = roleResult[0].id;
-
-        // Retrieve the manager ID based on the provided manager name
-        const managerQuery = 'SELECT id FROM employee WHERE CONCAT(first_name, " ", last_name) = ?';
-        const managerResult = await connection.query(managerQuery, [employeeManagerFirstName]);
-
-        if (managerResult.length === 0) {
-          throw new Error('Manager not found. Please enter a valid manager name.');
-        }
-
-        const employeeManagerId = managerResult[0].id;
-
-        const employee = {
-          first_name: employeeFirstName,
-          last_name: employeeLastName,
-          role_id: employeeRoleId,
-          manager_id: employeeManagerId,
-        };
-
-        await createEmployee(employee);
-        console.log('Employee added successfully!');
-      } catch (error) {
-        console.log('An error occurred:', error.message);
-      }
-
+      const { employeeFirstName, employeeLastName, employeeRole, departmentName, managerFirstName } = answers;
+      await createEmployee({ firstName: employeeFirstName, lastName: employeeLastName, role: employeeRole, department: departmentName, managerFirstName: managerFirstName });
+      console.log('Employee added successfully!');
       // Prompt to go back to view other options
       inquirer
         .prompt([
