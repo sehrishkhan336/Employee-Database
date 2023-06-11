@@ -279,7 +279,10 @@ async function createEmployee(employee) {
 }
 
 // Prompt to add an employee
-function promptAddEmployee() {
+async function promptAddEmployee() {
+  const roles = await connection.query('SELECT id as value, title as name FROM roles')
+  const Managers = await connection.query('SELECT id as value, CONCAT (first_name, " ", last_name) as name FROM employee')
+
   inquirer
     .prompt([
       {
@@ -295,27 +298,21 @@ function promptAddEmployee() {
         validate: (input) => (input ? true : "Employee's last name is required"),
       },
       {
-        type: 'input',
+        type: 'list',
         name: 'employeeRole',
         message: "Enter the employee's role title:",
-        validate: (input) => (input ? true : "Employee's role title is required"),
+        choices: roles,
       },
       {
-        type: 'input',
-        name: 'departmentName',
-        message: "Enter the department name:",
-        validate: (input) => (input ? true : "Department name is required"),
-      },
-      {
-        type: 'input',
+        type: 'list',
         name: 'managerFirstName',
         message: "Enter the first name of the employee's manager:",
-        validate: (input) => (input ? true : "First name of the employee's manager is required"),
+        choices: Managers,
       },
     ])
     .then(async (answers) => {
-      const { employeeFirstName, employeeLastName, employeeRole, departmentName, managerFirstName } = answers;
-      await createEmployee({ firstName: employeeFirstName, lastName: employeeLastName, role: employeeRole, department: departmentName, managerFirstName: managerFirstName });
+      const { employeeFirstName, employeeLastName, employeeRole, managerFirstName } = answers;
+      await createEmployee({ first_Name: employeeFirstName, last_Name: employeeLastName, role_id: employeeRole, manager_id: managerFirstName });
       console.log('Employee added successfully!');
       // Prompt to go back to view other options
       inquirer
@@ -351,34 +348,32 @@ function updateEmployeeRole(employeeId, newRole) {
 }
 
 // Prompt to update an employee's role
-function promptUpdateEmployeeRole() {
+async function promptUpdateEmployeeRole() {
+  const roles = await connection.query('SELECT id as value, title as name FROM roles')
+  const employee = await connection.query('SELECT id as value, CONCAT (first_name, " ", last_name) as name FROM employee')
   inquirer
     .prompt([
       {
-        type: 'input',
+        type: 'list',
         name: 'employeeId',
-        message: "Enter the ID of the employee you want to update:",
-        validate: (input) => (input ? true : "Employee ID is required"),
+        message: "Select the employee you want to update:",
+        choices: employee,
       },
       {
-        type: 'input',
+        type: 'list',
         name: 'newRole',
         message: "Enter the new role for the employee:",
-        validate: (input) => (input ? true : "New role is required"),
+        choices: roles,
       },
     ])
     .then(async (answers) => {
       const { employeeId, newRole } = answers;
 
       try {
-        // Retrieve the role ID based on the new role title
-        const roleQuery = 'SELECT id FROM roles WHERE title = ?';
-        const roleResult = await connection.query(roleQuery, [newRole]);
-        const roleId = roleResult[0].id;
 
         // Update the employee's role in the database
         const updateQuery = 'UPDATE employee SET role_id = ? WHERE id = ?';
-        await connection.query(updateQuery, [roleId, employeeId]);
+        await connection.query(updateQuery, [newRole, employeeId]);
 
         console.log('Employee role updated successfully!');
       } catch (error) {
